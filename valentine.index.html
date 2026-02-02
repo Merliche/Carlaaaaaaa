@@ -21,6 +21,8 @@
             align-items: center;
             min-height: 100vh;
             color: var(--rose);
+            padding: 10px; /* Ajout d'un petit padding pour les petits écrans */
+            box-sizing: border-box; /* Inclure le padding dans la taille totale */
         }
 
         .game-card {
@@ -31,6 +33,7 @@
             max-width: 450px;
             width: 90%;
             text-align: center;
+            position: relative; /* Pour positionner le GIF si besoin plus tard */
         }
 
         .photo-frame {
@@ -120,6 +123,15 @@
             75% { transform: translateX(-5px); }
             100% { transform: translateX(0); }
         }
+
+        /* Style pour le GIF du singe */
+        #dancing-monkey {
+            width: 120px; /* Taille du GIF */
+            height: auto;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -144,10 +156,12 @@
 <div class="game-card hidden" id="victory-screen">
     <h1 style="font-size: 2.5rem;">💖 OUI ! 💖</h1>
     <p style="color: #555; font-size: 1.2rem;" id="final-phrase"></p>
+    <img src="singedanse.gif" alt="Singe qui danse" id="dancing-monkey">
     <p>Je t'aime ! 🥰</p>
 </div>
 
 <script>
+    // --- DIAPORAMA DES PHOTOS ---
     const imgs = document.querySelectorAll('.photo-frame img');
     let currentIdx = 0;
     function slidePhotos() {
@@ -157,6 +171,7 @@
     }
     setInterval(slidePhotos, 3000);
 
+    // --- LOGIQUE DU JEU ---
     const phrase = "VEUX TU ETRE MA VALENTINE";
     let mistakes = 0;
     const maxMistakes = 7;
@@ -179,7 +194,7 @@
             const btn = document.createElement('button');
             btn.textContent = l;
             btn.onclick = () => {
-                btn.disabled = true;
+                btn.disabled = true; // Désactiver le bouton après le clic
                 if (phrase.includes(l)) {
                     document.querySelectorAll(`[data-char="${l}"]`).forEach(s => s.textContent = l);
                 } else {
@@ -209,9 +224,11 @@
         const win = Array.from(slots).every(s => s.textContent !== "");
         
         if (win) {
+            // Afficher l'écran de victoire
             document.getElementById('game-card').classList.add('hidden');
             document.getElementById('victory-screen').classList.remove('hidden');
             document.getElementById('final-phrase').textContent = phrase;
+            // Optionnel : tu peux jouer un son de victoire ici
         }
 
         if (mistakes >= maxMistakes) {
@@ -219,10 +236,10 @@
             document.querySelectorAll('#keyboard button').forEach(b => b.disabled = true);
             
             // Afficher le message d'erreur
-            statusMsg.textContent = "T'es vraiment un TDC ... Mais je t'aime quand même ! ";
+            statusMsg.textContent = "T'es vraiment un enorme TDC... Mais je t'aime quand même !";
             statusMsg.classList.add('shake');
             
-            // Recharger après 3 secondes
+            // Recharger après quelques secondes
             setTimeout(() => location.reload(), 3500);
         }
     }
