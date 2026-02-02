@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surprise pour ma Valentine</title>
+    <style>
+        :root {
+            --rose: #ff4d6d;
+            --rose-clair: #ffccd5;
+            --fond: #fff0f3;
+            --erreur: #d63384;
+        }
+
+        body {
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            background-color: var(--fond);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--rose);
+        }
+
+        .game-card {
+            background: white;
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .photo-frame {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 15px;
+            border-radius: 15px;
+            border: 4px solid var(--rose-clair);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0; left: 0;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        .photo-frame img.active { opacity: 1; }
+
+        canvas {
+            background: #fff;
+            border-bottom: 2px solid var(--rose-clair);
+            margin-bottom: 10px;
+        }
+
+        .word-container {
+            font-size: 1.2rem;
+            margin: 15px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .letter-slot {
+            border-bottom: 2px solid var(--rose-clair);
+            min-width: 15px;
+            height: 25px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .space { border: none; width: 10px; }
+
+        #keyboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+            gap: 5px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 8px 0;
+            border: none;
+            background: var(--rose-clair);
+            color: var(--rose);
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled { background: #eee; color: #ccc; }
+
+        #status-msg {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            min-height: 20px;
+            color: var(--erreur);
+        }
+
+        .hidden { display: none; }
+        
+        /* Animation pour le message d'erreur */
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-card" id="game-card">
+    <div class="photo-frame">
+        <img src="photo1.jpg" class="active">
+        <img src="photo2.jpg">
+        <img src="photo3.jpg">
+        <img src="photo5.png">
+    </div>
+
+    <h3 style="margin: 0;">Devine le message... 💌</h3>
+    
+    <canvas id="hangmanCanvas" width="160" height="150"></canvas>
+    
+    <div class="word-container" id="word-container"></div>
+    <div id="keyboard"></div>
+    <div id="status-msg"></div>
+</div>
+
+<div class="game-card hidden" id="victory-screen">
+    <h1 style="font-size: 2.5rem;">💖 OUI ! 💖</h1>
+    <p style="color: #555; font-size: 1.2rem;" id="final-phrase"></p>
+    <p>Je t'aime ! 🥰</p>
+</div>
+
+<script>
+    const imgs = document.querySelectorAll('.photo-frame img');
+    let currentIdx = 0;
+    function slidePhotos() {
+        imgs[currentIdx].classList.remove('active');
+        currentIdx = (currentIdx + 1) % imgs.length;
+        imgs[currentIdx].classList.add('active');
+    }
+    setInterval(slidePhotos, 3000);
+
+    const phrase = "VEUX TU ETRE MA VALENTINE";
+    let mistakes = 0;
+    const maxMistakes = 7;
+    
+    const wordContainer = document.getElementById('word-container');
+    const keyboard = document.getElementById('keyboard');
+    const statusMsg = document.getElementById('status-msg');
+    const ctx = document.getElementById('hangmanCanvas').getContext('2d');
+    ctx.strokeStyle = "#ff4d6d"; ctx.lineWidth = 3;
+
+    function init() {
+        phrase.split('').forEach(char => {
+            const span = document.createElement('span');
+            span.className = char === ' ' ? 'letter-slot space' : 'letter-slot';
+            if (char !== ' ') span.setAttribute('data-char', char);
+            wordContainer.appendChild(span);
+        });
+
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(l => {
+            const btn = document.createElement('button');
+            btn.textContent = l;
+            btn.onclick = () => {
+                btn.disabled = true;
+                if (phrase.includes(l)) {
+                    document.querySelectorAll(`[data-char="${l}"]`).forEach(s => s.textContent = l);
+                } else {
+                    mistakes++;
+                    draw();
+                }
+                check();
+            };
+            keyboard.appendChild(btn);
+        });
+    }
+
+    function draw() {
+        ctx.beginPath();
+        if(mistakes==1){ctx.moveTo(10,140);ctx.lineTo(150,140);ctx.moveTo(30,140);ctx.lineTo(30,10);ctx.lineTo(100,10);ctx.lineTo(100,30);}
+        if(mistakes==2){ctx.arc(100,45,15,0,Math.PI*2);}
+        if(mistakes==3){ctx.moveTo(100,60);ctx.lineTo(100,100);}
+        if(mistakes==4){ctx.moveTo(100,70);ctx.lineTo(80,90);}
+        if(mistakes==5){ctx.moveTo(100,70);ctx.lineTo(120,90);}
+        if(mistakes==6){ctx.moveTo(100,100);ctx.lineTo(85,125);}
+        if(mistakes==7){ctx.moveTo(100,100);ctx.lineTo(115,125);}
+        ctx.stroke();
+    }
+
+    function check() {
+        const slots = document.querySelectorAll('[data-char]');
+        const win = Array.from(slots).every(s => s.textContent !== "");
+        
+        if (win) {
+            document.getElementById('game-card').classList.add('hidden');
+            document.getElementById('victory-screen').classList.remove('hidden');
+            document.getElementById('final-phrase').textContent = phrase;
+        }
+
+        if (mistakes >= maxMistakes) {
+            // Désactiver le clavier pour éviter de cliquer partout
+            document.querySelectorAll('#keyboard button').forEach(b => b.disabled = true);
+            
+            // Afficher le message d'erreur
+            statusMsg.textContent = "T'es vraiment un TDC ... Mais je t'aime quand même ! ";
+            statusMsg.classList.add('shake');
+            
+            // Recharger après 3 secondes
+            setTimeout(() => location.reload(), 3500);
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
